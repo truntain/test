@@ -1,14 +1,14 @@
 import React from 'react';
-import type { ReactElement } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
-interface PrivateRouteProps {
-  children: ReactElement;
-}
-
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+// Không cần định nghĩa interface Props vì dùng Outlet
+const PrivateRoute: React.FC = () => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+
+  // Logic: 
+  // - Nếu có token: Render <Outlet /> (đây là nơi các trang con như Dashboard, Households... sẽ hiển thị)
+  // - Nếu không: Đá về trang Login
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export default PrivateRoute;

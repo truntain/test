@@ -1,6 +1,6 @@
 // src/components/MainLayout.tsx
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, theme, Button, Avatar, Dropdown, Space, Breadcrumb, Badge } from 'antd';
+import { Layout, Menu, theme, Button, Avatar, Dropdown, Space, Breadcrumb, Badge, Popover, List, Typography } from 'antd';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   PieChartOutlined,
@@ -15,11 +15,19 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  BuildOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
+
+const ROLES = {
+  ADMIN: 'ADMIN',
+  KE_TOAN: 'KE_TOAN',
+  TO_TRUONG: 'TO_TRUONG',
+};
 const { Header, Content, Footer, Sider } = Layout;
+
 
 // Helper để tạo menu item gọn hơn
 type MenuItem = Required<MenuProps>['items'][number];
@@ -43,6 +51,7 @@ const items: MenuItem[] = [
   getItem('Dashboard', '/dashboard', <PieChartOutlined />),
   
   getItem('Quản lý Cư dân', 'sub1', <TeamOutlined />, [
+    getItem('Danh sách Căn hộ', '/apartments', <BuildOutlined />),
     getItem('Danh sách Hộ dân', '/households', <HomeOutlined />),
     getItem('Thông tin Cư dân', '/residents', <UserOutlined />), // Cần tạo route này sau
     getItem('Quản lý Phương tiện', '/vehicles', <CarOutlined />), // Cần tạo route này sau
@@ -63,6 +72,7 @@ const items: MenuItem[] = [
 // Map đường dẫn sang tên hiển thị cho Breadcrumb
 const breadcrumbNameMap: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/apartments': 'Danh sách Căn hộ',
   '/households': 'Danh sách Hộ dân',
   '/residents': 'Thông tin Cư dân',
   '/vehicles': 'Quản lý Phương tiện',
@@ -81,6 +91,31 @@ const MainLayout: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { Text } = Typography;
+  const notificationsList = [
+      { title: 'Thông báo phí T10', description: 'Vui lòng đóng phí quản lý trước ngày 30/10' },
+      { title: 'Bảo trì thang máy', description: 'Thang máy B sẽ bảo trì vào ngày mai' },
+      { title: 'Họp tổ dân phố', description: 'Kính mời cư dân tham gia họp lúc 19h' },
+  ];
+  const notificationContent = (
+      <div style={{ width: 300 }}>
+        <List
+          itemLayout="horizontal"
+          dataSource={notificationsList}
+          renderItem={(item) => (
+            <List.Item>
+              <List.Item.Meta
+                title={<span style={{ fontWeight: 600 }}>{item.title}</span>}
+                description={<Text type="secondary" style={{ fontSize: 12 }}>{item.description}</Text>}
+              />
+            </List.Item>
+          )}
+        />
+        <Button type="link" block onClick={() => navigate('/notifications')}>
+          Xem tất cả thông báo
+        </Button>
+      </div>
+    );
 
   // Xử lý logic Breadcrumb
   const pathSnippets = location.pathname.split('/').filter((i) => i);
@@ -94,7 +129,52 @@ const MainLayout: React.FC = () => {
       };
     }),
   ];
+  const userRole = localStorage.getItem('role') || ROLES.ADMIN;
 
+  // Xây dựng menu động theo Role
+  const getMenuItems = (role: string): MenuItem[] => {
+    const menus: MenuItem[] = [
+      getItem('Dashboard', '/dashboard', <PieChartOutlined />),
+    ];
+
+    // ADMIN: Full quyền quản lý User
+    if (role === ROLES.ADMIN) {
+      menus.push(
+        getItem('Hệ thống', 'sub3', <SettingOutlined />, [
+          getItem('Tài khoản Admin', '/users', <UserOutlined />),
+          getItem('Cài đặt chung', '/settings'),
+        ])
+      );
+    }
+
+    // TO_TRUONG & ADMIN: Quản lý dân cư
+    if (role === ROLES.TO_TRUONG || role === ROLES.ADMIN) {
+      menus.push(
+        getItem('Quản lý Cư dân', 'sub1', <TeamOutlined />, [
+          getItem('Danh sách Căn hộ', '/apartments', <BuildOutlined />),
+          getItem('Danh sách Hộ dân', '/households', <HomeOutlined />),
+          getItem('Thông tin Cư dân', '/residents', <UserOutlined />),
+          getItem('Quản lý Phương tiện', '/vehicles', <CarOutlined />),
+        ])
+      );
+    }
+
+    // KE_TOAN & ADMIN: Quản lý thu phí + Báo cáo
+    if (role === ROLES.KE_TOAN || role === ROLES.ADMIN) {
+      menus.push(
+        getItem('Quản lý Phí & Dịch vụ', 'sub2', <BankOutlined />, [
+          getItem('Danh mục Phí', '/fee-items', <AppstoreOutlined />),
+          getItem('Đợt thu phí', '/fee-periods', <FileTextOutlined />),
+          getItem('Danh sách Công nợ', '/fee-obligations', <BankOutlined />),
+        ]),
+        getItem('Thông báo', '/notifications', <BellOutlined />) // Thêm menu thông báo
+      );
+    }
+
+    return menus;
+  };
+
+  const items = getMenuItems(userRole);
   // Menu Dropdown cho User Profile
   const userMenuProps: MenuProps = {
     items: [
@@ -204,9 +284,19 @@ const MainLayout: React.FC = () => {
 
           {/* Right Header: Notification & Profile */}
           <Space size={24}>
-            <Badge count={5} size="small">
-                <Button type="text" icon={<BellOutlined style={{ fontSize: 20 }} />} />
-            </Badge>
+           {/* --- PHẦN THÔNG BÁO MỚI --- */}
+            <Popover 
+              content={notificationContent} 
+              title="Thông báo mới" 
+              trigger="click" 
+              placement="bottomRight"
+              arrow={false}
+            >
+              <Badge count={notificationsList.length} size="small" style={{ cursor: 'pointer' }}>
+                  <Button type="text" icon={<BellOutlined style={{ fontSize: 20 }} />} />
+              </Badge>
+            </Popover>
+            {/* ------------------------- */}
 
             <Dropdown menu={userMenuProps} trigger={['click']}>
                 <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'background 0.3s' }} className="user-dropdown">

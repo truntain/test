@@ -71,6 +71,25 @@ export type Apartment = {
   status: string; // EMPTY, OCCUPIED
 };
 
+export type Notification = {
+  id: string;
+  title: string;
+  content: string;
+  type: string; // INFO, ALERT, FEE
+  status: string; // DRAFT, PUBLISHED
+  createdDate: string;
+  targetType: string; // ALL, SPECIFIC
+};
+
+export type ReportSummary = {
+  totalHouseholds: number;
+  totalPersons: number;
+  totalFees: number;
+  totalReceivable: number; // Tổng phải thu
+  totalCollected: number;  // Đã thu
+  collectionRate: number;  // Tỷ lệ
+};
+
 // --- 2. INITIAL MOCK DATA (Dữ liệu mẫu) ---
 
 let apartments: Apartment[] = [
@@ -119,6 +138,11 @@ let residents: Resident[] = [
 
 let vehicles: Vehicle[] = [
     { id: "v1", type: "Motorbike", plate: "29A-12345", brand: "Honda", color: "Đỏ", status: "Active", householdId: "1"}
+];
+
+let notifications: Notification[] = [
+  { id: "n1", title: "Thông báo thu phí T10", content: "Đề nghị cư dân đóng phí...", type: "FEE", status: "PUBLISHED", createdDate: "2023-10-01", targetType: "ALL" },
+  { id: "n2", title: "Bảo trì thang máy", content: "Bảo trì thang máy B...", type: "ALERT", status: "DRAFT", createdDate: "2023-10-05", targetType: "ALL" },
 ];
 
 // --- 3. HELPER FUNCTIONS ---
@@ -184,6 +208,29 @@ export const mockApi: ApiClient = {
         if (hh) return { data: hh as T };
     }
 
+    // NOTIFICATIONS
+    if (url.startsWith("/notifications")) {
+       return { data: notifications as T };
+    }
+
+    // REPORTS
+    if (url.startsWith("/reports/summary")) {
+        // Mock tính toán báo cáo
+        const totalReceivable = obligations.reduce((sum, o) => sum + o.expected, 0);
+        const totalCollected = obligations.reduce((sum, o) => sum + o.paid, 0);
+        const rate = totalReceivable > 0 ? (totalCollected / totalReceivable) * 100 : 0;
+
+        const reportData: ReportSummary = {
+            totalHouseholds: householdList.length,
+            totalPersons: residents.length,
+            totalFees: feeItems.length,
+            totalReceivable,
+            totalCollected,
+            collectionRate: parseFloat(rate.toFixed(2))
+        };
+        return { data: reportData as T };
+    }
+
     return { data: [] as T };
   },
 
@@ -219,6 +266,17 @@ export const mockApi: ApiClient = {
         return { data: { success: true } as T };
     }
 
+    if (url === "/notifications") {
+        const newItem = { 
+            id: `n${Date.now()}`, 
+            ...body, 
+            status: "DRAFT", 
+            createdDate: new Date().toISOString().split('T')[0] 
+        };
+        notifications = [newItem, ...notifications];
+        return { data: newItem as T };
+    }
+
     return { data: {} as T };
   },
 
@@ -246,6 +304,12 @@ export const mockApi: ApiClient = {
         obligations = obligations.map(o => 
             o.id === id ? { ...o, paid: o.expected, status: "PAID" } : o
         );
+        return { data: { success: true } as T };
+      }
+
+      if (url.startsWith("/notifications/") && url.endsWith("/publish")) {
+        const id = url.split("/")[2];
+        notifications = notifications.map(n => n.id === id ? { ...n, status: "PUBLISHED" } : n);
         return { data: { success: true } as T };
       }
       return { data: {} as T };

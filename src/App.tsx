@@ -1,63 +1,72 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
-import Login from './app/pages/Login';
-import Register from './app/pages/Register';
-import Dashboard from './app/pages/Dashboard';
-import Users from './app/pages/Users';
-import Households from './app/pages/Households';
-import Persons from './app/pages/Persons';
-import HouseholdDetail from './app/pages/HouseholdDetail';
+
+// --- IMPORT LAYOUT & AUTH ---
 import MainLayout from './app/layouts/MainLayout';
 import PrivateRoute from './routes/PrivateRoute';
+import Login from './app/pages/Login';
+import Register from './app/pages/Register';
 
-// --- IMPORT MỚI ---
+// --- IMPORT CÁC PAGE CHỨC NĂNG ---
+import Dashboard from './app/pages/Dashboard';
+import Notifications from './app/pages/Notifications';
+import Users from './app/pages/Users';
+import Households from './app/pages/Households';
+import HouseholdDetail from './app/pages/HouseholdDetail';
+import Persons from './app/pages/Persons';
+import Residents from './app/pages/Resident'; // File tên là Resident.tsx nhưng component thường gọi là Residents
+import Vehicles from './app/pages/Vehicles';
 import Apartments from './app/pages/Apartments';
+
+// --- IMPORT QUẢN LÝ PHÍ ---
 import FeeItems from './app/pages/FeeItems';
 import FeePeriods from './app/pages/FeePeriods';
 import FeeObligations from './app/pages/FeeObligations';
-import Residents from './app/pages/Resident';
-import Vehicles from './app/pages/Vehicles';
+
+// Component Dummy cho trang chưa có
+const Settings = () => <div><h2>Trang Cài Đặt (Đang phát triển)</h2></div>;
 
 export default function App() {
   return (
     <ConfigProvider>
       <BrowserRouter>
         <Routes>
+          {/* 1. Route Public (Không cần đăng nhập) */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            
-            {/* --- SỬA LẠI KHÚC NÀY CHO KHỚP VỚI MENU --- */}
-            {/* MainLayout đang gọi /fee-items nên ở đây path phải là "fee-items" */}
-            <Route path="fee-items" element={<PrivateRoute><FeeItems /></PrivateRoute>} />
-            <Route path="fee-periods" element={<PrivateRoute><FeePeriods /></PrivateRoute>} />
-            <Route path="fee-obligations" element={<PrivateRoute><FeeObligations /></PrivateRoute>} />
-            {/* 1. Danh sách Hộ dân */}
-            <Route path="households" element={<PrivateRoute><Households /></PrivateRoute>} />
-            
-            {/* 2. Chi tiết 1 Hộ dân */}
-            <Route path="households/:id" element={<PrivateRoute><HouseholdDetail /></PrivateRoute>} />
+          {/* 2. Route Protected (Cần đăng nhập) */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/" element={<MainLayout />}>
+              
+              {/* Redirect mặc định về dashboard */}
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
 
-            {/* 3. Thông tin Cư dân (Toàn bộ) - Khớp với menu /residents */}
-            <Route path="residents" element={<PrivateRoute><Residents /></PrivateRoute>} />
+              {/* --- NHÓM QUẢN LÝ CƯ DÂN --- */}
+              <Route path="households" element={<Households />} />
+              <Route path="households/:id" element={<HouseholdDetail />} />
+              <Route path="residents" element={<Residents />} />
+              <Route path="persons/:householdId" element={<Persons />} />
+              <Route path="vehicles" element={<Vehicles />} />
 
-            {/* 4. Quản lý Phương tiện (Toàn bộ) - Khớp với menu /vehicles */}
-            <Route path="vehicles" element={<PrivateRoute><Vehicles /></PrivateRoute>} />
-            {/* ------------------------------------------- */}
+              {/* --- NHÓM QUẢN LÝ PHÍ & DỊCH VỤ --- */}
+              <Route path="fee-items" element={<FeeItems />} />
+              <Route path="fee-periods" element={<FeePeriods />} />
+              <Route path="fee-obligations" element={<FeeObligations />} />
 
-            {/* Các route khác (nếu MainLayout gọi /apartments thì giữ nguyên) */}
-            <Route path="apartments" element={<PrivateRoute><Apartments /></PrivateRoute>} />
+              {/* --- NHÓM HỆ THỐNG & TIỆN ÍCH --- */}
+              <Route path="users" element={<Users />} />
+              <Route path="apartments" element={<Apartments />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="settings" element={<Settings />} />
 
-            <Route path="households" element={<PrivateRoute><Households /></PrivateRoute>} />
-            <Route path="households/:id" element={<PrivateRoute><HouseholdDetail /></PrivateRoute>} />
-            <Route path="users" element={<PrivateRoute><Users /></PrivateRoute>} />
-            <Route path="persons/:householdId" element={<PrivateRoute><Persons /></PrivateRoute>} />
-
-            
+            </Route>
           </Route>
+
+          {/* Catch-all: Nếu nhập đường dẫn sai thì về Login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </ConfigProvider>
