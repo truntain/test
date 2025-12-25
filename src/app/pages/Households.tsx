@@ -4,12 +4,17 @@ import { api } from "../services/api";
 import TableCustom from '../components/TableCustom';
 import HouseholdForm from '../components/Household/HouseholdForm';
 import { useNavigate } from 'react-router-dom'; 
+import dayjs from 'dayjs';
 
 interface Household {
   id: string;
   householdId: string;
   ownerName: string;
   address: string;
+  phone?: string;
+  moveInDate?: string;
+  status?: string;
+  apartmentId?: string;
 }
 
 const Households: React.FC = () => {
@@ -59,14 +64,18 @@ const Households: React.FC = () => {
     fetchHouseholds();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async () => { 
     try {
       const values = await form.validateFields();
+      const payload = {
+        ...values,
+        moveInDate: values.moveInDate ? values.moveInDate.format('YYYY-MM-DD') : null,
+      };
       if (editingHousehold) {
-        await api.put(`/households/${editingHousehold.id}`, values);
+        await api.put(`/households/${editingHousehold.id}`, payload);
         message.success('Cập nhật hộ dân thành công!');
       } else {
-        await api.post('/households', values);
+        await api.post('/households', payload);
         message.success('Thêm hộ dân thành công!');
       }
       setIsModalOpen(false);
@@ -81,27 +90,11 @@ const Households: React.FC = () => {
   const handleEdit = (household: Household) => {
     setEditingHousehold(household);
     setIsModalOpen(true);
-    form.setFieldsValue(household);
+    form.setFieldsValue({
+      ...household,
+      moveInDate: household.moveInDate ? dayjs(household.moveInDate) : null,
+    });
   };
-
-   /*  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingHousehold) {
-        await api.put(`/households/${editingHousehold.id}`, values);
-        message.success('Cập nhật hộ dân thành công!');
-      } else {
-        await api.post('/households', values);
-        message.success('Thêm hộ dân thành công!');
-      }
-      setIsModalOpen(false);
-      setEditingHousehold(null);
-      form.resetFields();
-      fetchHouseholds();
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Lỗi khi lưu hộ dân');
-    }
-  };*/
 
   const handleDelete = async (id: string) => {
     try {
@@ -128,7 +121,7 @@ const columns = [
         <Button danger onClick={() => handleDelete(record.id)} style={{ marginRight: 8 }}>
           Xóa
         </Button>
-        <Button type="default" onClick={() => navigate(`/households/${record.householdId}`)}>
+        <Button type="default" onClick={() => navigate(`/households/${record.id}`)}>
           Chi tiết hộ
         </Button>
       </>
@@ -170,7 +163,13 @@ const columns = [
         </Button>
       </div>
 
-      <TableCustom columns={columns} dataSource={households} rowKey="id" loading={loading} />
+      <TableCustom 
+        columns={columns} 
+        dataSource={households} 
+        rowKey="id" 
+        loading={loading} 
+        pagination={false}
+      />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
         <Pagination

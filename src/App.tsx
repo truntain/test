@@ -8,6 +8,7 @@ import Households from './app/pages/Households';
 import Persons from './app/pages/Persons';
 import MainLayout from './app/layouts/MainLayout';
 import PrivateRoute from './routes/PrivateRoute';
+import HouseholdDetail from './app/pages/HouseholdDetail';
 
 export default function App() {
   return (
@@ -33,6 +34,14 @@ export default function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="households/:id"
+              element={
+                <PrivateRoute>
+                  <HouseholdDetail />
                 </PrivateRoute>
               }
             />

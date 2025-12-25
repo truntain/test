@@ -7,6 +7,7 @@ import { api } from "../services/api";
 import ResidentForm from "../components/Household/ResidentForm";
 import VehicleForm from "../components/Household/VehicleForm";
 import FeePaymentForm from "../components/Household/FeePaymentForm";
+import dayjs from 'dayjs';
 
 interface Household {
   id: string;
@@ -106,11 +107,15 @@ const HouseholdDetail: React.FC = () => {
   const handleResidentSubmit = async () => {
     try {
       const values = await residentForm.validateFields();
+      const payload = {
+        ...values,
+        dob: values.dob ? values.dob.format('YYYY-MM-DD') : null
+      };
       if (editingResident) {
-        await api.put(`/residents/${editingResident.id}`, values);
+        await api.put(`/residents/${editingResident.id}`, payload);
         message.success("Cập nhật nhân khẩu thành công!");
       } else {
-        await api.post(`/households/${id}/residents`, values);
+        await api.post(`/households/${id}/residents`, payload);
         message.success("Thêm nhân khẩu thành công!");
       }
       setIsResidentModalOpen(false);
@@ -125,7 +130,11 @@ const HouseholdDetail: React.FC = () => {
   const handleEditResident = (resident: Resident) => {
     setEditingResident(resident);
     setIsResidentModalOpen(true);
-    residentForm.setFieldsValue(resident);
+    residentForm.resetFields();
+    residentForm.setFieldsValue({
+      ...resident,
+      dob: resident.dob ? dayjs(resident.dob) : null,
+    });
   };
 
     // Them sua xoa Phuong Tien
@@ -151,6 +160,7 @@ const HouseholdDetail: React.FC = () => {
     const handleEditVehicle = (vehicle: Vehicle) => {
     setEditingVehicle(vehicle);
     setIsVehicleModalOpen(true);
+    vehicleForm.resetFields(); 
     vehicleForm.setFieldsValue(vehicle);
     };
 
