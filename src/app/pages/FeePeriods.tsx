@@ -5,6 +5,7 @@ import { api } from "../services/api";
 const FeePeriods = () => {
   const [periods, setPeriods] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
 
   const fetchPeriods = async () => {
@@ -37,6 +38,10 @@ const FeePeriods = () => {
       }
   };
 
+  const filteredPeriods = periods.filter((p: any) => 
+    p.name?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   const columns = [
     { title: "Tên kỳ", dataIndex: "name" },
     { title: "Bắt đầu", dataIndex: "startDate" },
@@ -59,6 +64,14 @@ const FeePeriods = () => {
 
   return (
     <Card title="Quản lý Kỳ thu" extra={<Button type="primary" onClick={() => setIsModalOpen(true)}>Kỳ mới</Button>}>
+      <div style={{ marginBottom: 16 }}>
+         <Input.Search 
+            placeholder="Tìm tên kỳ thu" 
+            allowClear 
+            onChange={e => setSearchText(e.target.value)} 
+            style={{ width: 300 }}
+         />
+      </div>
       <Table rowKey="id" dataSource={periods} columns={columns} />
       <Modal title="Tạo kỳ thu mới" open={isModalOpen} onOk={handleCreate} onCancel={() => setIsModalOpen(false)}>
         <Form form={form} layout="vertical">

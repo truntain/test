@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Tag, message } from 'antd';
+import { Table, Card, Tag, message, Input, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { mockApi, type Resident } from '../services/mockApi'; // Đảm bảo đường dẫn đúng tới mockApi
 
 const Residents: React.FC = () => {
   const [data, setData] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -25,6 +26,15 @@ const Residents: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const filteredData = data.filter((item) => {
+    const value = searchText.toLowerCase();
+    return (
+      item.fullName?.toLowerCase().includes(value) ||
+      item.idNumber?.toLowerCase().includes(value) ||
+      item.householdId?.toLowerCase().includes(value)
+    );
+  });
 
   const columns: ColumnsType<Resident> = [
     { title: 'Họ và tên', dataIndex: 'fullName', key: 'fullName' },
@@ -46,6 +56,15 @@ const Residents: React.FC = () => {
 
   return (
     <Card title="Danh sách Cư dân toàn khu" bordered={false}>
+      <Space style={{ marginBottom: 16 }}>
+        <Input.Search
+          placeholder="Tìm theo tên, CMND"
+          allowClear
+          onSearch={(val) => setSearchText(val)}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 300 }}
+        />
+      </Space>
       <Table 
         columns={columns} 
         dataSource={data} 

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Table, Card, Button, Modal, Form, Input, Select, InputNumber, message } from "antd";
+import { Table, Card, Button, Modal, Form, Input, Select, InputNumber, message, Space } from "antd";
 import { api } from "../services/api";
 
 const FeeItems = () => {
   const [items, setItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
 
   const fetchItems = async () => {
@@ -22,6 +23,10 @@ const FeeItems = () => {
     fetchItems();
   };
 
+  const filteredItems = items.filter((item: any) => 
+    item.name?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   const columns = [
     { title: "Tên khoản thu", dataIndex: "name" },
     { title: "Loại", dataIndex: "type" },
@@ -32,6 +37,14 @@ const FeeItems = () => {
 
   return (
     <Card title="Danh mục Khoản thu" extra={<Button type="primary" onClick={() => setIsModalOpen(true)}>Tạo mới</Button>}>
+      <div style={{ marginBottom: 16 }}>
+             <Input.Search 
+                placeholder="Tìm tên khoản thu" 
+                allowClear
+                onChange={e => setSearchText(e.target.value)}
+                style={{ width: 300 }}
+             />
+        </div>
       <Table rowKey="id" dataSource={items} columns={columns} />
       <Modal title="Thêm khoản thu" open={isModalOpen} onOk={handleSave} onCancel={() => setIsModalOpen(false)}>
         <Form form={form} layout="vertical">

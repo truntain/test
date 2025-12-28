@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Tag, message } from 'antd';
+import { Table, Card, Tag, message, Input, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { mockApi, type Vehicle } from '../services/mockApi';
 
 const Vehicles: React.FC = () => {
   const [data, setData] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -25,6 +26,11 @@ const Vehicles: React.FC = () => {
     }
   };
 
+  const filteredData = data.filter((item) => 
+    item.plate?.toLowerCase().includes(searchText.toLowerCase()) ||
+    item.householdId?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   const columns: ColumnsType<Vehicle> = [
     { title: 'Biển số', dataIndex: 'plate', key: 'plate', render: (text) => <b>{text}</b> },
     { title: 'Loại xe', dataIndex: 'type', key: 'type' },
@@ -43,9 +49,17 @@ const Vehicles: React.FC = () => {
 
   return (
     <Card title="Quản lý Phương tiện" bordered={false}>
+      <Space style={{ marginBottom: 16 }}>
+        <Input.Search
+          placeholder="Tìm theo biển số"
+          allowClear
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 300 }}
+        />
+      </Space>
       <Table 
         columns={columns} 
-        dataSource={data} 
+       dataSource={filteredData}
         rowKey="id" 
         loading={loading} 
       />
