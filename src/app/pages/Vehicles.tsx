@@ -263,7 +263,8 @@ const Vehicles: React.FC = () => {
               pageSize: 10,
               total: total,
               onChange: (p) => setPage(p - 1),
-              showTotal: (total) => `Tổng ${total} phương tiện`
+              showTotal: (total) => `Tổng ${total} phương tiện`,
+              placement: ['bottomCenter']
             }}
           />
         </Card>

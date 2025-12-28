@@ -33,7 +33,8 @@ const Apartments: React.FC = () => {
   const [data, setData] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  
+  const [total] = useState(0);
+  const [page, setPage] = useState(0);
   // State mới: Lưu ID đang sửa (nếu null => đang thêm mới)
   const [editingId, setEditingId] = useState<string | number | null>(null);
 
@@ -41,18 +42,18 @@ const Apartments: React.FC = () => {
   const [form] = Form.useForm();
 
   // --- 1. Fetch Data ---
+  // --- 1. Fetch Data ---
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/apartments");
+     const res = await api.get("/apartments");
+      // Nếu API trả về mảng thì lấy, không thì gán mảng rỗng để tránh lỗi map()
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
-      // Dữ liệu mẫu fallback
-      setData([
-        { id: 1, block: "A1", floor: 12, unit: "A1-1205", area: 75.5, status: "OCCUPIED" },
-        { id: 2, block: "B2", floor: 5, unit: "B2-0501", area: 90, status: "EMPTY" },
-      ]);
+      console.error("Lỗi khi tải dữ liệu:", err);
+      // Đã xóa dữ liệu mẫu fallback tại đây.
+      // Bạn có thể thêm message.error("Lỗi tải trang") của Antd nếu muốn.
+      setData([]); 
     } finally {
       setLoading(false);
     }
@@ -273,7 +274,14 @@ const Apartments: React.FC = () => {
             loading={loading}
             dataSource={filteredData} 
             columns={columns} 
-            pagination={{ pageSize: 5, placement: ['bottomCenter'] }}
+            pagination={{
+              current: page + 1,               
+              pageSize: 10,                    // Số dòng mỗi trang
+              total: total,                 
+              onChange: (p) => setPage(p - 1), 
+              showTotal: (total) => `Tổng ${total} căn hộ`,
+              placement: ['bottomCenter']
+            }}
           />
         </Card>
 
