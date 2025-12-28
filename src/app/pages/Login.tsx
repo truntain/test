@@ -51,7 +51,7 @@ const Login: React.FC = () => {
       {/* Đây là lớp phủ màu đen làm tối ảnh nền */}
       <div style={styles.overlay}></div>
 
-      <Card style={styles.card} bordered={false}>
+      <Card style={styles.card} variant="borderless">
         {/* Phần Header chứa tên chung cư */}
         <div style={styles.headerContainer}>
            {/* Icon tòa nhà (tùy chọn) */}

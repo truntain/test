@@ -5,12 +5,11 @@ import {
   Tooltip, Popconfirm, ConfigProvider 
 } from "antd";
 import { 
-  PlusOutlined, SearchOutlined, ReloadOutlined, 
-  HomeOutlined, EditOutlined, DeleteOutlined,
-  CheckCircleOutlined, ExclamationCircleOutlined, SyncOutlined
+  PlusOutlined, HomeOutlined, EditOutlined, DeleteOutlined,
+  CheckCircleOutlined, ExclamationCircleOutlined
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import { api } from "../services/api";
+import { api } from "../services/api"; // Giả định bạn đã có file này
 
 const { Title, Text } = Typography;
 
@@ -34,10 +33,14 @@ const Apartments: React.FC = () => {
   const [data, setData] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  
+  // State mới: Lưu ID đang sửa (nếu null => đang thêm mới)
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+
   const [searchText, setSearchText] = useState<string>("");
   const [form] = Form.useForm();
 
-  // --- API Functions ---
+  // --- 1. Fetch Data ---
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -45,13 +48,11 @@ const Apartments: React.FC = () => {
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
-      // Fallback data demo cho bạn thấy giao diện nếu API lỗi
+      // Dữ liệu mẫu fallback
       setData([
         { id: 1, block: "A1", floor: 12, unit: "A1-1205", area: 75.5, status: "OCCUPIED" },
         { id: 2, block: "B2", floor: 5, unit: "B2-0501", area: 90, status: "EMPTY" },
-        { id: 3, block: "C1", floor: 2, unit: "C1-0202", area: 110, status: "MAINTENANCE" },
       ]);
-      // message.error("Không tải được dữ liệu, đang dùng dữ liệu mẫu.");
     } finally {
       setLoading(false);
     }
@@ -59,17 +60,74 @@ const Apartments: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // --- 2. Logic XÓA (Delete) ---
+  const handleDelete = async (id: string | number) => {
+    try {
+      // Gọi API Xóa (Giả lập)
+      await api.delete(`/apartments/${id}`);
+      
+      message.success("Đã xóa căn hộ thành công");
+      
+      // Cập nhật giao diện ngay lập tức (Client-side)
+      setData((prev) => prev.filter((item) => item.id !== id));
+      
+    } catch (err) {
+      message.error("Xóa thất bại, vui lòng thử lại.");
+      console.error(err);
+    }
+  };
+
+  // --- 3. Logic Chuẩn bị SỬA (Prepare Edit) ---
+  const handleOpenEdit = (record: Apartment) => {
+    setEditingId(record.id);       // Lưu ID đang sửa
+    form.setFieldsValue(record);   // Đổ dữ liệu cũ vào form
+    setIsModalOpen(true);          // Mở Modal
+  };
+
+  // --- 4. Logic Chuẩn bị THÊM MỚI (Prepare Add) ---
+  const handleOpenAdd = () => {
+    setEditingId(null);            // Reset ID về null
+    form.resetFields();            // Xóa trắng form cũ
+    setIsModalOpen(true);          // Mở Modal
+  };
+
+  // --- 5. Logic SUBMIT (Xử lý chung cho Thêm & Sửa) ---
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      await api.post("/apartments", values);
-      message.success("🎉 Thêm căn hộ thành công!");
+
+      if (editingId) {
+        // === TRƯỜNG HỢP SỬA (UPDATE) ===
+        await api.put(`/apartments/${editingId}`, values);
+        
+        message.success("Cập nhật thành công!");
+        
+        // Cập nhật State Data (Tìm dòng có ID đó và thay thế data mới)
+        setData((prev) => prev.map((item) => 
+          item.id === editingId ? { ...item, ...values } : item
+        ));
+
+      } else {
+        // === TRƯỜNG HỢP THÊM MỚI (CREATE) ===
+        const res = await api.post("/apartments", values);
+        
+        message.success("Thêm mới thành công!");
+        
+        // Cách 1: Fetch lại toàn bộ (An toàn nhất để lấy ID mới từ server)
+        fetchData(); 
+        
+        // Cách 2 (Nếu API trả về item vừa tạo): 
+        // setData([...data, res.data]); 
+      }
+
+      // Đóng modal và dọn dẹp
       setIsModalOpen(false);
+      setEditingId(null);
       form.resetFields();
-      fetchData();
+
     } catch (err) {
-      message.error("Có lỗi xảy ra, vui lòng thử lại.");
+      message.error("Có lỗi xảy ra khi lưu dữ liệu.");
     } finally {
       setLoading(false);
     }
@@ -131,10 +189,24 @@ const Apartments: React.FC = () => {
       width: 100,
       render: (_, record) => (
         <Space size="small">
+          {/* NÚT SỬA */}
           <Tooltip title="Chỉnh sửa">
-            <Button type="text" icon={<EditOutlined style={{ color: '#faad14' }} />} />
+            <Button 
+              type="text" 
+              icon={<EditOutlined style={{ color: '#faad14' }} />} 
+              onClick={() => handleOpenEdit(record)} // Gọi hàm sửa
+            />
           </Tooltip>
-          <Popconfirm title="Bạn chắc chắn muốn xóa?" okText="Xóa" cancelText="Hủy">
+
+          {/* NÚT XÓA */}
+          <Popconfirm 
+            title="Xác nhận xóa?" 
+            description="Hành động này không thể hoàn tác."
+            onConfirm={() => handleDelete(record.id)} // Gọi hàm xóa
+            okText="Xóa" 
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
              <Tooltip title="Xóa">
                 <Button type="text" danger icon={<DeleteOutlined />} />
              </Tooltip>
@@ -151,19 +223,18 @@ const Apartments: React.FC = () => {
   }, [data, searchText]);
 
   return (
-    // ConfigProvider giúp đổi màu chủ đạo toàn bộ component con bên trong
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#00b96b', // Màu xanh lá/ngọc thân thiện
+          colorPrimary: '#00b96b',
           borderRadius: 8,
         },
       }}
     >
       <div style={{ padding: "24px", backgroundColor: "#f0f2f5", minHeight: "100vh" }}>
         <Card
-          bordered={false}
-          style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} // Đổ bóng nhẹ cho đẹp
+          variant="borderless"
+          style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ backgroundColor: '#e6fffb', padding: '8px', borderRadius: '50%', color: '#00b96b' }}>
@@ -171,20 +242,22 @@ const Apartments: React.FC = () => {
               </span>
               <div>
                 <Title level={4} style={{ margin: 0 }}>Quản lý Căn hộ</Title>
-                <Text type="secondary" style={{ fontSize: '12px' }}>Danh sách toàn bộ căn hộ trong hệ thống</Text>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Hệ thống quản lý tòa nhà</Text>
               </div>
             </div>
           }
           extra={
-            <Space>
-               <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-                Thêm mới
-              </Button>
-            </Space>
+            <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handleOpenAdd} // Gọi hàm mở form thêm mới
+            >
+              Thêm căn hộ mới
+            </Button>
           }
         >
           {/* Thanh tìm kiếm */}
-          <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ marginBottom: 20 }}>
             <Input 
               placeholder="🔍 Tìm theo Mã căn / Block..." 
               allowClear
@@ -200,43 +273,45 @@ const Apartments: React.FC = () => {
             loading={loading}
             dataSource={filteredData} 
             columns={columns} 
-            // Cấu hình Pagination (Phân trang) chuẩn tiếng Việt
-            pagination={{ 
-              pageSize: 5, 
-              showSizeChanger: true, 
-              pageSizeOptions: ['5', '10', '20'],
-              locale: { items_per_page: " / trang" }, // Sửa chữ "/page" thành "/ trang"
-              showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} trong tổng ${total} căn`, // Dòng tổng số
-              position: ['bottomCenter'] // Căn giữa cho đẹp
-            }}
+            pagination={{ pageSize: 5, placement: ['bottomCenter'] }}
           />
         </Card>
 
         {/* Modal Form */}
         <Modal
-          title={<Space><PlusOutlined style={{ color: '#00b96b'}} /> Thêm căn hộ mới</Space>}
+          // Thay đổi tiêu đề Modal tùy theo trạng thái
+          title={
+             <Space>
+                {editingId ? <EditOutlined style={{ color: '#faad14'}} /> : <PlusOutlined style={{ color: '#00b96b'}} />} 
+                {editingId ? "Cập nhật thông tin" : "Thêm căn hộ mới"}
+             </Space>
+          }
           open={isModalOpen}
           onOk={handleSubmit}
-          onCancel={() => setIsModalOpen(false)}
-          destroyOnClose
-          okText="Lưu lại"
+          onCancel={() => {
+              setIsModalOpen(false);
+              setEditingId(null);
+              form.resetFields();
+          }}
+          
+          okText={editingId ? "Cập nhật" : "Thêm mới"}
           cancelText="Hủy bỏ"
+          confirmLoading={loading} // Hiệu ứng xoay khi đang submit
         >
           <Form form={form} layout="vertical" initialValues={{ status: "EMPTY" }}>
-             {/* Giữ nguyên logic form cũ nhưng layout gọn hơn */}
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <Form.Item name="block" label="Block" rules={[{ required: true }]}>
+                <Form.Item name="block" label="Block" rules={[{ required: true, message: 'Vui lòng nhập Block' }]}>
                    <Input prefix={<HomeOutlined />} placeholder="VD: A1" />
                 </Form.Item>
-                <Form.Item name="floor" label="Tầng" rules={[{ required: true }]}>
+                <Form.Item name="floor" label="Tầng" rules={[{ required: true, message: 'Nhập số tầng' }]}>
                    <InputNumber style={{ width: "100%" }} min={1} placeholder="VD: 5" />
                 </Form.Item>
              </div>
-             <Form.Item name="unit" label="Mã căn" rules={[{ required: true }]}>
+             <Form.Item name="unit" label="Mã căn" rules={[{ required: true, message: 'Vui lòng nhập mã căn' }]}>
                 <Input placeholder="VD: A1-502" />
              </Form.Item>
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <Form.Item name="area" label="Diện tích (m²)" rules={[{ required: true }]}>
+                <Form.Item name="area" label="Diện tích (m²)" rules={[{ required: true, message: 'Nhập diện tích' }]}>
                    <InputNumber style={{ width: "100%" }} min={1} />
                 </Form.Item>
                 <Form.Item name="status" label="Trạng thái">

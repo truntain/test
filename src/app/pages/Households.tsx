@@ -1,239 +1,314 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Modal, Form, Input, message, Pagination } from 'antd';
-import { api } from "../services/api"; 
-import TableCustom from '../components/TableCustom';
-import HouseholdForm from '../components/Household/HouseholdForm';
-import { useNavigate } from 'react-router-dom'; 
+import React, { useEffect, useState, useRef } from 'react';
+import { 
+  Button, Modal, Form, message, Table, 
+  Card, Typography, Tag, Space, Tooltip, Popconfirm, ConfigProvider, Input 
+} from 'antd';
+import { 
+  PlusOutlined, EditOutlined, DeleteOutlined, 
+  UserOutlined, SolutionOutlined, HomeOutlined, PhoneOutlined 
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
+import type { ColumnsType } from 'antd/es/table';
+
+import HouseholdForm from '../components/Household/HouseholdForm';
+import { api } from "../services/api"; 
+
+const { Title, Text } = Typography;
 
 interface Household {
-  id: string;
+  id: string | number;
   householdId: string;
   ownerName: string;
-  address: string;
-  phone?: string;
-  moveInDate?: string;
-  status?: string;
-  apartmentId?: string;
+  phone: string;
+  apartmentId: string | number;
+  apartmentUnit?: string;
+  moveInDate: string;
+  status: 'ACTIVE' | 'MOVED_OUT' | 'TEMPORARY';
 }
 
 const Households: React.FC = () => {
-  const navigate = useNavigate();
+  // --- State ---
   const [households, setHouseholds] = useState<Household[]>([]);
-  const [total, setTotal] = useState(0);
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(0); // backend thường 0-based
   const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  
+  // State tìm kiếm (Input value)
+  const [keyword, setKeyword] = useState('');
 
+  // State Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingHousehold, setEditingHousehold] = useState<Household | null>(null);
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  
   const [form] = Form.useForm();
+  
+  // --- SỬA LỖI DÒNG 46 ---
+  // Sử dụng ReturnType<typeof setTimeout> để lấy đúng kiểu dữ liệu của trình duyệt (thường là number)
+  // thay vì dùng NodeJS.Timeout
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchHouseholds = async () => {
+  // --- API Fetch ---
+  // --- API Fetch ---
+  const fetchHouseholds = async (currentPage: number, searchKeyword: string) => {
     setLoading(true);
     try {
+      // 1. Lấy toàn bộ dữ liệu từ Mock API
       const res = await api.get("/households", {
-        params: { keyword, page, size: 10 },
+        params: { keyword: searchKeyword, page: currentPage, size: 10 },
       });
+      
+      let list = Array.isArray(res.data) ? res.data : res.data.content || [];
 
-      const list = Array.isArray(res.data)
-        ? res.data
-        : res.data.content || [];
+      // === THÊM ĐOẠN LỌC DỮ LIỆU TẠI ĐÂY ===
+      if (searchKeyword) {
+          const lowerKeyword = searchKeyword.toLowerCase().trim();
+          list = list.filter((item: Household) => {
+              // Tìm kiếm theo: Mã hộ, Tên chủ hộ, Số điện thoại
+              const matchCode = item.householdId?.toLowerCase().includes(lowerKeyword);
+              const matchName = item.ownerName?.toLowerCase().includes(lowerKeyword);
+              const matchPhone = item.phone?.includes(lowerKeyword);
+              
+              // (Tùy chọn) Tìm theo tên căn hộ nếu có
+              const matchApt = item.apartmentUnit?.toLowerCase().includes(lowerKeyword);
 
-      const total =
-        Array.isArray(res.data)
-          ? res.data.length
-          : res.data.totalElements ?? res.data.total ?? 0;
-
+              return matchCode || matchName || matchPhone || matchApt;
+          });
+      }
+      // ======================================
+      
+      const totalEl = list.length; // Cập nhật tổng số sau khi lọc
+      
       setHouseholds(list);
-      setTotal(total);
-    } catch (err: any) {
-      message.error(err.response?.data?.message || "Lỗi tải danh sách hộ dân");
+      setTotal(totalEl);
+    } catch (err) {
+      console.error(err);
+      message.error("Lỗi tải danh sách hộ dân");
     } finally {
       setLoading(false);
     }
   };
 
-
+  // --- Effect 1: Gọi API khi Page thay đổi (Pagination) ---
+  // Lưu ý: Chỉ gọi khi page đổi, còn keyword đổi sẽ xử lý ở hàm onChange bên dưới
   useEffect(() => {
-    fetchHouseholds();
-  }, [page]); // lúc đầu gọi theo page
+    fetchHouseholds(page, keyword);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); 
 
-  const handleSearch = async () => {
-    setPage(0);
-    fetchHouseholds();
+  // --- Xử lý Tìm kiếm (Real-time Debounce) ---
+  // Nhập tới đâu tìm tới đó, delay 500ms
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+
+    // Xóa timeout cũ nếu người dùng đang gõ liên tục
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Đặt timeout mới
+    searchTimeoutRef.current = setTimeout(() => {
+      setPage(0); // Reset về trang 1
+      fetchHouseholds(0, value); // Gọi API tìm kiếm
+    }, );
   };
 
-  const handleSubmit = async () => { 
+  // --- Handlers ---
+  const handleEdit = (record: Household) => {
+    setEditingId(record.id);
+    setIsModalOpen(true);
+    form.setFieldsValue({
+      ...record,
+      moveInDate: record.moveInDate ? dayjs(record.moveInDate) : null,
+      apartmentId: record.apartmentId 
+    });
+  };
+
+  const handleCreate = () => {
+    setEditingId(null);
+    form.resetFields(); 
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       const payload = {
         ...values,
         moveInDate: values.moveInDate ? values.moveInDate.format('YYYY-MM-DD') : null,
       };
-      if (editingHousehold) {
-        await api.put(`/households/${editingHousehold.id}`, payload);
+
+      setLoading(true);
+
+      if (editingId) {
+        await api.put(`/households/${editingId}`, payload);
         message.success('Cập nhật hộ dân thành công!');
+        fetchHouseholds(page, keyword); // Reload lại dữ liệu
       } else {
         await api.post('/households', payload);
-        message.success('Thêm hộ dân thành công!');
+        message.success('Thêm hộ dân mới thành công!');
+        setPage(0);
+        fetchHouseholds(0, keyword); // Reload về trang đầu
       }
+
       setIsModalOpen(false);
-      setEditingHousehold(null);
+      setEditingId(null);
       form.resetFields();
-      fetchHouseholds();
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Lỗi khi lưu hộ dân');
+       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEdit = (household: Household) => {
-    setEditingHousehold(household);
-    setIsModalOpen(true);
-    form.setFieldsValue({
-      ...household,
-      moveInDate: household.moveInDate ? dayjs(household.moveInDate) : null,
-    });
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     try {
       await api.delete(`/households/${id}`);
-      message.success('Xóa hộ dân thành công!');
-      fetchHouseholds();
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Lỗi khi xóa hộ dân');
+      message.success('Đã xóa hộ dân.');
+      fetchHouseholds(page, keyword);
+    } catch (err) {
+      message.error('Lỗi khi xóa.');
     }
   };
 
-
-const columns = [
-  { title: 'Mã hộ', dataIndex: 'householdId' },
-  { title: 'Tên chủ hộ', dataIndex: 'ownerName' },
-  { title: 'Địa chỉ', dataIndex: 'address' },
-  // Trong danh sách columns của bạn ở file Households.tsx
-{
-  header: "Hành động",
-  accessor: "id", // hoặc field định danh của bạn
-  // Phần quan trọng là hàm render bên dưới:
-  render: (row: any) => (
-    <div className="flex items-center gap-2">
-      {/* Nút Sửa - Màu xanh, icon bút chì */}
-      <button
-        onClick={() => handleEdit(row)} // Thay handleEdit bằng hàm xử lý của bạn
-        className="group relative p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 ease-in-out"
-        title="Chỉnh sửa"
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="18" height="18" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-      </button>
-
-      {/* Nút Xóa - Màu đỏ, icon thùng rác */}
-      <button
-        onClick={() => handleDelete(row.id)} // Thay handleDelete bằng hàm xử lý của bạn
-        className="group relative p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 ease-in-out"
-        title="Xóa"
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="18" height="18" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      </button>
-    </div>
-  ),
-  className: "w-24 text-center" // Căn chỉnh cột
-}
-];
-
+  // --- Table Columns ---
+  const columns: ColumnsType<Household> = [
+    { 
+      title: 'Mã hộ dân', 
+      dataIndex: 'householdId',
+      width: 120,
+      render: (text) => <Tag color="blue" style={{ fontWeight: 'bold' }}>{text}</Tag>
+    },
+    { 
+      title: 'Chủ hộ', 
+      dataIndex: 'ownerName',
+      render: (_, record) => (
+        <Space orientation="vertical" size={0}>
+          <Text strong><UserOutlined style={{ marginRight: 5}} />{record.ownerName}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+             <PhoneOutlined /> {record.phone || '---'}
+          </Text>
+        </Space>
+      )
+    },
+    { 
+        title: 'Căn hộ', 
+        dataIndex: 'apartmentId', 
+        width: 120,
+        render: (text, record) => (
+            <Tag icon={<HomeOutlined />} color="cyan">
+                {record.apartmentUnit || text} 
+            </Tag>
+        )
+    },
+    {
+        title: 'Ngày chuyển đến',
+        dataIndex: 'moveInDate',
+        width: 140,
+        align: 'center',
+        render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '-'
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      width: 130,
+      align: 'center',
+      render: (status) => {
+        let color = 'default';
+        let label = status;
+        if (status === 'ACTIVE') { color = 'success'; label = 'Thường trú'; }
+        else if (status === 'INACTIVE') { color = 'error'; label = 'Đã rời đi'; }
+        else if (status === 'TEMPORARY') { color = 'warning'; label = 'Tạm trú'; }
+        return <Tag color={color}>{label}</Tag>
+      }
+    },
+    {
+      title: 'Hành động',
+      key: 'action',
+      width: 100,
+      align: 'center',
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="Sửa thông tin">
+            <Button type="text" icon={<EditOutlined style={{ color: '#faad14' }} />} onClick={() => handleEdit(record)} />
+          </Tooltip>
+          <Popconfirm title="Xóa hộ dân này?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
+            <Tooltip title="Xóa">
+              <Button type="text" danger icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    }
+  ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <Input
-          placeholder="Tìm theo mã hộ / tên chủ hộ / địa chỉ"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onPressEnter={handleSearch}
-          style={{ maxWidth: 360 }}
-        />
-        <Button type="primary" onClick={handleSearch}>Tìm kiếm</Button>
-        <Button
-          onClick={() => {
-            setKeyword('');
-            setPage(0);
-            fetchHouseholds();
-          }}
+    <ConfigProvider theme={{ token: { colorPrimary: '#1890ff', borderRadius: 6 } }}>
+      <div style={{ padding: "24px", backgroundColor: "#f0f2f5", minHeight: "100vh" }}>
+        <Card
+          variant="borderless"
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ backgroundColor: '#e6f7ff', padding: '8px', borderRadius: '50%', color: '#1890ff' }}>
+                <SolutionOutlined style={{ fontSize: '20px' }} />
+              </span>
+              <div>
+                <Title level={4} style={{ margin: 0 }}>Quản lý Hộ dân</Title>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Danh sách các hộ gia đình</Text>
+              </div>
+            </div>
+          }
+          extra={
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              Thêm hộ dân
+            </Button>
+          }
         >
-          Xóa lọc
-        </Button>
-        <Button
-          type="primary"
-          style={{ marginLeft: 'auto' }}
-          onClick={() => {
-            setEditingHousehold(null);
-            setIsModalOpen(true);
-            form.resetFields();
-          }}
+          {/* Thanh tìm kiếm: CHỈ CÒN INPUT */}
+          <div style={{ marginBottom: 20 }}>
+            <Input
+              placeholder="🔍 Tìm theo Mã hộ / Tên chủ hộ..."
+              value={keyword}
+              onChange={handleSearchChange} // Gọi hàm nhập tới đâu tìm tới đó
+              style={{ width: '100%', maxWidth: 400 }}
+              allowClear
+              size="large"
+            />
+          </div>
+
+          {/* Table */}
+          <Table 
+            columns={columns} 
+            dataSource={households} 
+            rowKey="id" 
+            loading={loading}
+            pagination={{
+              current: page + 1,
+              pageSize: 10,
+              total: total,
+              onChange: (p) => setPage(p - 1),
+              showTotal: (total) => `Tổng ${total} hộ dân`,
+              placement: ['bottomCenter']
+            }}
+          />
+        </Card>
+
+        {/* Modal Form */}
+        <Modal
+          title={editingId ? "Cập nhật thông tin hộ dân" : "Thêm hộ dân mới"}
+          open={isModalOpen}
+          onOk={handleSubmit}
+          onCancel={() => { setIsModalOpen(false); setEditingId(null); form.resetFields(); }}
+          
+          okText="Lưu lại"
+          cancelText="Hủy bỏ"
+          width={700}
         >
-          Thêm hộ dân
-        </Button>
+          <HouseholdForm form={form} />
+        </Modal>
       </div>
-
-      <TableCustom 
-        columns={columns} 
-        dataSource={households} 
-        rowKey="id" 
-        loading={loading} 
-        pagination={false}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-        <Pagination
-          current={page + 1}
-          pageSize={10}
-          total={total}
-          onChange={(p) => setPage(p - 1)}
-          showSizeChanger={false}
-        />
-      </div>
-
-      <Modal
-        title={editingHousehold ? 'Sửa hộ dân' : 'Thêm hộ dân'}
-        open={isModalOpen}
-        onOk={handleSubmit}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingHousehold(null);
-          form.resetFields();
-        }}
-      >
-        <HouseholdForm form={form} />
-      </Modal>
-    </div>
+    </ConfigProvider>
   );
 };
 
 export default Households;
-

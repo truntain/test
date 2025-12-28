@@ -17,6 +17,7 @@ import {
   BellOutlined,
   AppstoreOutlined,
   BuildOutlined,
+  SolutionOutlined
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -51,8 +52,8 @@ const items: MenuItem[] = [
   getItem('Dashboard', '/dashboard', <PieChartOutlined />),
   
   getItem('Quản lý Cư dân', 'sub1', <TeamOutlined />, [
-    getItem('Danh sách Căn hộ', '/apartments', <BuildOutlined />),
-    getItem('Danh sách Hộ dân', '/households', <HomeOutlined />),
+    getItem('Danh sách Căn hộ', '/apartments', <HomeOutlined />),
+    getItem('Danh sách Hộ dân', '/households', <SolutionOutlined/>),
     getItem('Thông tin Cư dân', '/residents', <UserOutlined />), // Cần tạo route này sau
     getItem('Quản lý Phương tiện', '/vehicles', <CarOutlined />), // Cần tạo route này sau
   ]),
@@ -151,8 +152,8 @@ const MainLayout: React.FC = () => {
     if (role === ROLES.TO_TRUONG || role === ROLES.ADMIN) {
       menus.push(
         getItem('Quản lý Cư dân', 'sub1', <TeamOutlined />, [
-          getItem('Danh sách Căn hộ', '/apartments', <BuildOutlined />),
-          getItem('Danh sách Hộ dân', '/households', <HomeOutlined />),
+          getItem('Danh sách Căn hộ', '/apartments', <HomeOutlined />),
+          getItem('Danh sách Hộ dân', '/households', <SolutionOutlined />),
           getItem('Thông tin Cư dân', '/residents', <UserOutlined />),
           getItem('Quản lý Phương tiện', '/vehicles', <CarOutlined />),
         ])
@@ -222,7 +223,15 @@ const MainLayout: React.FC = () => {
         width={250}
         style={{
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          zIndex: 10
+          zIndex: 10,
+          // --- BẮT ĐẦU SỬA ---
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          // --- KẾT THÚC SỬA ---
         }}
       >
         <div style={{ 
@@ -232,7 +241,7 @@ const MainLayout: React.FC = () => {
           justifyContent: 'center',
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
-           {/* Logo giả lập */}
+           {/* Logo giả lập giữ nguyên */}
            <div style={{ 
              width: 32, height: 32, background: '#1890ff', borderRadius: 6, marginRight: collapsed ? 0 : 8 
            }} />
@@ -246,7 +255,7 @@ const MainLayout: React.FC = () => {
         <Menu
           theme="dark"
           mode="inline"
-          defaultOpenKeys={['sub1', 'sub2']} // Mặc định mở nhóm quản lý
+          defaultOpenKeys={['sub1', 'sub2']}
           selectedKeys={[selectedKey]}
           items={items}
           onClick={onMenuClick}
@@ -254,7 +263,14 @@ const MainLayout: React.FC = () => {
         />
       </Sider>
 
-      <Layout>
+      {/* --- SỬA THẺ LAYOUT NÀY --- */}
+      {/* Phải thêm marginLeft để đẩy nội dung sang phải */}
+      <Layout 
+        style={{ 
+            marginLeft: collapsed ? 80 : 250, // 80 là chiều rộng khi thu nhỏ, 250 là khi mở rộng
+            transition: 'all 0.2s'            // Hiệu ứng trượt mượt mà khi đóng mở
+        }}
+      > 
         <Header style={{ 
             padding: '0 24px', 
             background: colorBgContainer,
@@ -266,7 +282,7 @@ const MainLayout: React.FC = () => {
             top: 0,
             zIndex: 1,
         }}>
-          {/* Left Header: Toggle & Breadcrumb */}
+          {/* ... Phần Header giữ nguyên ... */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Button
               type="text"
@@ -282,10 +298,9 @@ const MainLayout: React.FC = () => {
             <Breadcrumb items={breadcrumbItems} />
           </div>
 
-          {/* Right Header: Notification & Profile */}
           <Space size={24}>
-           {/* --- PHẦN THÔNG BÁO MỚI --- */}
-            <Popover 
+            {/* ... Phần Notification & Profile giữ nguyên ... */}
+             <Popover 
               content={notificationContent} 
               title="Thông báo mới" 
               trigger="click" 
@@ -296,7 +311,6 @@ const MainLayout: React.FC = () => {
                   <Button type="text" icon={<BellOutlined style={{ fontSize: 20 }} />} />
               </Badge>
             </Popover>
-            {/* ------------------------- */}
 
             <Dropdown menu={userMenuProps} trigger={['click']}>
                 <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'background 0.3s' }} className="user-dropdown">
@@ -317,7 +331,6 @@ const MainLayout: React.FC = () => {
               minHeight: 360,
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
-              // Thêm shadow nhẹ cho nội dung chính
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)' 
             }}
           >

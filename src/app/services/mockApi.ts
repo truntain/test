@@ -1,7 +1,9 @@
 // src/app/services/mockApi.ts
 import type { ApiClient, ApiResponse } from "./apiClient";
 
-// --- 1. TYPES DEFINITION (Đã thêm export đầy đủ) ---
+// --- 1. TYPES DEFINITION ---
+export type HouseholdStatus = 'ACTIVE' | 'INACTIVE' | 'TEMPORARY'; 
+
 export type Household = {
   id: string;
   householdId: string;
@@ -9,29 +11,31 @@ export type Household = {
   phone: string;
   address: string;
   moveInDate: string;
-  status: string;
+  status: HouseholdStatus; // Hoặc để string như cũ nếu bạn muốn
   apartmentId: string;
 };
 
 export type Resident = {
   id: string;
   fullName: string;
-  dob: string;
-  gender: string;
-  idNumber: string;
+  dateOfBirth: string;     // Đã sửa từ 'dob' để khớp frontend
+  gender: string;          // MALE, FEMALE, OTHER
+  identityCard: string;    // Đã sửa từ 'idNumber' để khớp frontend
+  phone?: string;          // Thêm trường này
   relationshipToHead: string;
-  status: string;
+  status: string;          // ACTIVE, TEMPORARY, ABSENT...
   householdId: string;
+  isHead?: boolean;        // Thêm trường xác định chủ hộ
 };
 
 export type Vehicle = {
   id: string;
-  type: string;
-  plate: string;
-  brand: string;
-  color: string;
-  status: string;
-  householdId: string;
+  type: string;       // MOTORBIKE, CAR, ELECTRIC_BIKE, BICYCLE
+  plate: string;      // Biển số
+  brand: string;      // Hãng xe
+  color: string;      // Màu xe
+  status: string;     // ACTIVE, INACTIVE
+  householdId: string;// Mã hộ sở hữu
 };
 
 export type FeeItem = {
@@ -62,13 +66,15 @@ export type Obligation = {
   householdId: string;
 };
 
+export type ApartmentStatus = 'EMPTY' | 'OCCUPIED' | 'MAINTENANCE'; 
+
 export type Apartment = {
   id: string;
   block: string;
   floor: string;
   unit: string;
   area: number;
-  status: string; // EMPTY, OCCUPIED
+  status: ApartmentStatus; // Sử dụng type vừa định nghĩa
 };
 
 export type Notification = {
@@ -93,19 +99,48 @@ export type ReportSummary = {
 // --- 2. INITIAL MOCK DATA (Dữ liệu mẫu) ---
 
 let apartments: Apartment[] = [
-  { id: "a1", block: "A", floor: "02", unit: "05", area: 75, status: "OCCUPIED" },
-  { id: "a2", block: "A", floor: "03", unit: "01", area: 100, status: "OCCUPIED" },
-  { id: "a3", block: "B", floor: "05", unit: "10", area: 60, status: "EMPTY" },
+  { 
+    id: "ap001", block: "A", floor: "05", unit: "12", 
+    area: 72.5, status: "OCCUPIED" 
+  },
+  { 
+    id: "ap002", block: "B", floor: "12", unit: "04", 
+    area: 95.0, status: "EMPTY" 
+  },
+  { 
+    id: "ap003", block: "A", floor: "08", unit: "02", 
+    area: 55.0, status: "OCCUPIED" 
+  },
+  { 
+    id: "ap004", block: "C", floor: "03", unit: "06", 
+    area: 110.0, status: "MAINTENANCE" // Ví dụ thêm trạng thái đang bảo trì
+  },
+  { 
+    id: "ap005", block: "B", floor: "15", unit: "09", 
+    area: 82.0, status: "EMPTY" 
+  },
 ];
 
 let householdList: Household[] = [
   {
-    id: "1", householdId: "HK001", ownerName: "Nguyễn Văn A", phone: "0912345678",
-    address: "A-02-05", moveInDate: "2023-01-01", status: "ACTIVE", apartmentId: "a1",
+    id: "1", householdId: "HK001", ownerName: "Lê Thị Cẩm Tú", phone: "0905123456",
+    address: "A-05-12", moveInDate: "2023-03-10", status: "ACTIVE", apartmentId: "a101",
   },
   {
-    id: "2", householdId: "HK002", ownerName: "Trần Văn B", phone: "0987654321",
-    address: "A-03-01", moveInDate: "2023-02-15", status: "ACTIVE", apartmentId: "a2",
+    id: "2", householdId: "HK002", ownerName: "Phạm Minh Hoàng", phone: "0934567890",
+    address: "B-12-04", moveInDate: "2023-05-20", status: "ACTIVE", apartmentId: "b204",
+  },
+  {
+    id: "3", householdId: "HK003", ownerName: "Vũ Thu Hà", phone: "0918889999",
+    address: "A-08-01", moveInDate: "2023-06-15", status: "ACTIVE", apartmentId: "a305",
+  },
+  {
+    id: "4", householdId: "HK004", ownerName: "Đặng Tuấn Kiệt", phone: "0387776666",
+    address: "C-03-09", moveInDate: "2023-08-01", status: "INACTIVE", apartmentId: "c109",
+  },
+  {
+    id: "5", householdId: "HK005", ownerName: "Ngô Bảo Châu", phone: "0971222333",
+    address: "B-15-02", moveInDate: "2023-09-05", status: "ACTIVE", apartmentId: "b502",
   },
 ];
 
@@ -132,12 +167,117 @@ let obligations: Obligation[] = [
 ];
 
 let residents: Resident[] = [
-    { id: "r1", fullName: "Nguyễn Thị C", dob: "1990-01-01", gender: "Female", idNumber: "123456789", relationshipToHead: "Vợ", status: "Present", householdId: "1"},
-    { id: "r2", fullName: "Nguyễn Văn Con", dob: "2015-05-05", gender: "Male", idNumber: "", relationshipToHead: "Con", status: "Present", householdId: "1"}
+    // Hộ 1 (ID: "1") - Gia đình ông Nguyễn Văn A
+    { 
+        id: "r1", 
+        fullName: "Nguyễn Văn A", 
+        dateOfBirth: "1985-05-15", 
+        gender: "MALE", 
+        identityCard: "001085000123", 
+        phone: "0912345678",
+        relationshipToHead: "Chủ hộ", 
+        status: "ACTIVE", 
+        householdId: "1",
+        isHead: true 
+    },
+    { 
+        id: "r2", 
+        fullName: "Trần Thị B", 
+        dateOfBirth: "1987-08-20", 
+        gender: "FEMALE", 
+        identityCard: "001087000456", 
+        phone: "0987654321",
+        relationshipToHead: "Vợ", 
+        status: "ACTIVE", 
+        householdId: "1",
+        isHead: false 
+    },
+    { 
+        id: "r3", 
+        fullName: "Nguyễn Văn C", 
+        dateOfBirth: "2010-01-10", 
+        gender: "MALE", 
+        identityCard: "", // Trẻ em chưa có CCCD
+        relationshipToHead: "Con", 
+        status: "ACTIVE", 
+        householdId: "1",
+        isHead: false 
+    },
+    // Khách ở nhờ nhà hộ 1
+    { 
+        id: "r4", 
+        fullName: "Lê Văn D", 
+        dateOfBirth: "1995-12-05", 
+        gender: "MALE", 
+        identityCard: "025095000789", 
+        phone: "0909090909",
+        relationshipToHead: "Cháu", 
+        status: "TEMPORARY", // Tạm trú
+        householdId: "1",
+        isHead: false 
+    },
+    
+    // Hộ 2 (ID: "2") - Gia đình ông Trần Văn B
+    { 
+        id: "r5", 
+        fullName: "Trần Văn B", 
+        dateOfBirth: "1980-03-22", 
+        gender: "MALE", 
+        identityCard: "030098000999", 
+        phone: "0911223344",
+        relationshipToHead: "Chủ hộ", 
+        status: "ACTIVE", 
+        householdId: "2",
+        isHead: true 
+    }
 ];
 
 let vehicles: Vehicle[] = [
-    { id: "v1", type: "Motorbike", plate: "29A-12345", brand: "Honda", color: "Đỏ", status: "Active", householdId: "1"}
+    { 
+        id: "v1", 
+        type: "CAR", 
+        plate: "30A-123.45", 
+        brand: "Toyota Vios", 
+        color: "Đen", 
+        status: "ACTIVE", 
+        householdId: "HK001" 
+    },
+    { 
+        id: "v2", 
+        type: "MOTORBIKE", 
+        plate: "29-B1 567.89", 
+        brand: "Honda Vision", 
+        color: "Đỏ", 
+        status: "ACTIVE", 
+        householdId: "HK001" 
+    },
+    { 
+        id: "v3", 
+        type: "ELECTRIC_BIKE", 
+        plate: "29-MD1 999.88", 
+        brand: "VinFast Klara", 
+        color: "Trắng", 
+        status: "ACTIVE", 
+        householdId: "HK002" 
+    },
+    { 
+        id: "v4", 
+        type: "CAR", 
+        plate: "51F-888.88", 
+        brand: "Mercedes C300", 
+        color: "Xanh Canvas", 
+        status: "INACTIVE", // Xe đang gửi chỗ khác hoặc đi vắng dài ngày
+        householdId: "HK002" 
+    },
+    { 
+        id: "v5", 
+        type: "BICYCLE", 
+        plate: "", // Xe đạp không có biển
+        brand: "Thống Nhất", 
+        color: "Xanh dương", 
+        status: "ACTIVE", 
+        householdId: "HK003" 
+    }
 ];
 
 let notifications: Notification[] = [
@@ -237,6 +377,18 @@ export const mockApi: ApiClient = {
   async post<T = any>(url: string, body?: any): Promise<ApiResponse<T>> {
     console.log(`[MockAPI] POST ${url}`, body);
 
+    if (url === "/residents") {
+        const newItem = { id: `r${Date.now()}`, ...body };
+        residents = [newItem, ...residents];
+        return { data: newItem as T };
+    }
+    
+    if (url === "/vehicles") {
+        const newItem = { id: `v${Date.now()}`, ...body };
+        vehicles = [newItem, ...vehicles];
+        return { data: newItem as T };
+    }
+
     if (url === "/apartments") {
         const newItem = { id: `a${Date.now()}`, ...body };
         apartments = [newItem, ...apartments];
@@ -282,6 +434,20 @@ export const mockApi: ApiClient = {
 
   async put<T = any>(url: string, body?: any): Promise<ApiResponse<T>> {
     console.log(`[MockAPI] PUT ${url}`, body);
+
+    if (url.startsWith("/residents/")) {
+        const id = url.split("/").pop();
+        // Cập nhật trong mảng residents
+        residents = residents.map(r => r.id === id ? { ...r, ...body } : r);
+        return { data: body as T };
+    }
+
+    if (url.startsWith("/vehicles/")) {
+        const id = url.split("/").pop();
+        // Cập nhật trong mảng vehicles
+        vehicles = vehicles.map(v => v.id === id ? { ...v, ...body } : v);
+        return { data: body as T };
+    }
     
     if (url.startsWith("/apartments/")) {
         const id = url.split("/").pop();
@@ -317,6 +483,18 @@ export const mockApi: ApiClient = {
 
   async delete<T = any>(url: string): Promise<ApiResponse<T>> {
     console.log(`[MockAPI] DELETE ${url}`);
+
+    if (url.startsWith("/residents/")) {
+        const id = url.split("/").pop();
+        residents = residents.filter(r => r.id !== id);
+        return { data: { success: true } as T };
+    }
+
+    if (url.startsWith("/vehicles/")) {
+        const id = url.split("/").pop();
+        vehicles = vehicles.filter(v => v.id !== id);
+        return { data: { success: true } as T };
+    }
 
     if (url.startsWith("/apartments/")) {
         const id = url.split("/").pop();

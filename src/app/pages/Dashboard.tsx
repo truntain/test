@@ -130,7 +130,7 @@ const Dashboard: React.FC = () => {
       <Row gutter={24} style={{ marginBottom: 24 }}>
         <Col span={8}>
           <Card 
-            bordered={false} 
+            variant="borderless"
             hoverable
             style={{ 
               background: 'linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%)', // Gradient Xanh biển
@@ -148,7 +148,7 @@ const Dashboard: React.FC = () => {
         </Col>
         <Col span={8}>
           <Card 
-            bordered={false} 
+           variant="borderless"
             hoverable
             style={{ 
               background: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)', // Gradient Hồng tím
@@ -166,7 +166,7 @@ const Dashboard: React.FC = () => {
         </Col>
          <Col span={8}>
           <Card 
-            bordered={false} 
+            variant="borderless"
             hoverable
             style={{ 
               background: 'linear-gradient(135deg, #F2994A 0%, #F2C94C 100%)', // Gradient Vàng Cam
@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
       <Row gutter={24} style={{ marginBottom: 24 }}>
         <Col span={8}>
           <Card 
-            bordered={false} 
+            variant="borderless"
             style={{ borderRadius: 12, borderTop: '4px solid #1890ff' }} // Viền trên màu xanh
           >
              <Statistic 
@@ -207,7 +207,7 @@ const Dashboard: React.FC = () => {
         </Col>
         <Col span={8}>
           <Card 
-            bordered={false} 
+            variant="borderless"
             style={{ borderRadius: 12, borderTop: '4px solid #52c41a' }} // Viền trên màu xanh lá
           >
              <Statistic 
@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
         </Col>
         <Col span={8}>
            <Card 
-            bordered={false} 
+            variant="borderless"
             style={{ borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
         <Col span={24}>
           <Card 
             title={<span><BellOutlined style={{ marginRight: 8, color: '#faad14' }} />Tin tức & Sự kiện</span>} 
-            bordered={false}
+            variant="borderless"
             bodyStyle={{ padding: '24px' }}
           >
             {/* Đã xóa height và overflow để bỏ thanh cuộn riêng */}

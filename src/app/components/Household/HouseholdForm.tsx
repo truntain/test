@@ -1,94 +1,114 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, DatePicker, Select, message } from "antd";
+import { Form, Input, DatePicker, Select, type FormInstance } from "antd";
 import { api } from "../../services/api";
 
 interface HouseholdFormProps {
-  form: any; // FormInstance từ antd
+  form: FormInstance; 
 }
 
 interface Apartment {
-  id: string;
+  id: string | number;
   block: string;
-  floor: string;
+  floor: number | string;
   unit: string;
 }
 
 const HouseholdForm: React.FC<HouseholdFormProps> = ({ form }) => {
   const [apartments, setApartments] = useState<Apartment[]>([]);
+  const [loadingApt, setLoadingApt] = useState(false);
 
   useEffect(() => {
     const fetchApartments = async () => {
+      setLoadingApt(true);
       try {
-        const res = await api.get("/apartments", { params: { status: "ACTIVE" } });
-        setApartments(res.data.content || res.data);
-      } catch (err: any) {
-        message.error(err.response?.data?.message || "Lỗi tải danh sách căn hộ");
+        const res = await api.get("/apartments"); 
+        const list = Array.isArray(res.data) ? res.data : res.data.content || [];
+        setApartments(list);
+      } catch (err) {
+        console.error("Lỗi tải list căn hộ");
+      } finally {
+        setLoadingApt(false);
       }
     };
     fetchApartments();
   }, []);
 
   return (
-    <Form form={form} layout="vertical">
-      <Form.Item
-        label="Mã hộ khẩu"
-        name="householdId"
-        rules={[{ required: true, message: "Vui lòng nhập mã hộ khẩu" }]}
-      >
-        <Input placeholder="Nhập mã hộ khẩu" />
-      </Form.Item>
+    <Form form={form} layout="vertical" name="household_form">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        {/* Cột Trái */}
+        <div>
+            <Form.Item
+                label="Mã hộ dân (Số sổ hộ khẩu)"
+                name="householdId"
+                rules={[{ required: true, message: "Vui lòng nhập mã hộ" }]}
+            >
+                <Input placeholder="VD: HK-2023-01" />
+            </Form.Item>
 
-      <Form.Item
-        label="Căn hộ"
-        name="apartmentId"
-        rules={[{ required: true, message: "Vui lòng chọn căn hộ" }]}
-      >
-        <Select placeholder="Chọn căn hộ">
-          {apartments.map((apt) => (
-            <Select.Option key={apt.id} value={apt.id}>
-              {`${apt.block}-${apt.floor}-${apt.unit}`}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
+            <Form.Item
+                label="Tên chủ hộ"
+                name="ownerName"
+                rules={[{ required: true, message: "Vui lòng nhập tên chủ hộ" }]}
+            >
+                <Input placeholder="Nguyễn Văn A" />
+            </Form.Item>
 
-      <Form.Item
-        label="Tên chủ hộ"
-        name="ownerName"
-        rules={[{ required: true, message: "Vui lòng nhập tên chủ hộ" }]}
-      >
-        <Input placeholder="Nhập tên chủ hộ" />
-      </Form.Item>
+            <Form.Item
+                label="Số điện thoại liên hệ"
+                name="phone"
+                rules={[
+                { required: true, message: "Vui lòng nhập số điện thoại" },
+                { pattern: /^[0-9]{9,11}$/, message: "SĐT không hợp lệ" },
+                ]}
+            >
+                <Input placeholder="09xxxxxxxxx" />
+            </Form.Item>
+        </div>
 
-      <Form.Item
-        label="Số điện thoại"
-        name="phone"
-        rules={[
-          { required: true, message: "Vui lòng nhập số điện thoại" },
-          { pattern: /^[0-9]{9,11}$/, message: "Số điện thoại không hợp lệ" },
-        ]}
-      >
-        <Input placeholder="Nhập số điện thoại" />
-      </Form.Item>
+        {/* Cột Phải */}
+        <div>
+            <Form.Item
+                label="Thuộc căn hộ"
+                name="apartmentId"
+                rules={[{ required: true, message: "Vui lòng chọn căn hộ" }]}
+            >
+                <Select 
+                    placeholder="Chọn căn hộ sở hữu" 
+                    loading={loadingApt}
+                    showSearch
+                    optionFilterProp="children"
+                >
+                {apartments.map((apt) => (
+                    <Select.Option key={apt.id} value={apt.id}>
+                        {`${apt.block} - ${apt.unit}`}
+                    </Select.Option>
+                ))}
+                </Select>
+            </Form.Item>
 
-      <Form.Item
-        label="Ngày nhập hộ"
-        name="moveInDate"
-        rules={[{ required: true, message: "Vui lòng chọn ngày nhập hộ" }]}
-      >
-        <DatePicker format="YYYY-MM-DD" style={{ width: "100%" }} />
-      </Form.Item>
+            <Form.Item
+                label="Ngày chuyển đến"
+                name="moveInDate"
+                rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
+            >
+                <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} placeholder="Chọn ngày" />
+            </Form.Item>
 
-      <Form.Item
-        label="Trạng thái"
-        name="status"
-        rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-      >
-        <Select placeholder="Chọn trạng thái">
-          <Select.Option value="ACTIVE">Đang ở</Select.Option>
-          <Select.Option value="MOVED_OUT">Đã chuyển đi</Select.Option>
-        </Select>
-      </Form.Item>
+            <Form.Item
+                label="Trạng thái cư trú"
+                name="status"
+                initialValue="ACTIVE"
+                rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+            >
+                <Select placeholder="Chọn trạng thái">
+                <Select.Option value="ACTIVE">Thường trú</Select.Option>
+                <Select.Option value="TEMPORARY">Tạm trú</Select.Option>
+                <Select.Option value="MOVED_OUT">Đã chuyển đi</Select.Option>
+                </Select>
+            </Form.Item>
+        </div>
+      </div>
     </Form>
   );
 };
