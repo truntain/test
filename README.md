@@ -1,156 +1,220 @@
-# 🏢 Hệ thống Quản lý Chung cư (Apartment Management System)
+# 🏢 Phần Mềm Quản Lý Chung Cư
 
-## 📋 Giới thiệu
+Hệ thống quản lý chung cư toàn diện được xây dựng với kiến trúc Frontend - Backend hiện đại, hỗ trợ quản lý cư dân, căn hộ, dịch vụ và các hoạt động vận hành chung cư. 
 
-Dự án **Quản lý Chung cư** là một hệ thống web application được xây dựng để hỗ trợ việc quản lý các hoạt động trong khu chung cư, bao gồm quản lý cư dân, căn hộ, phí dịch vụ và các tiện ích khác.
+## 📋 Mục Lục
 
-## 🛠️ Công nghệ sử dụng
+- [Giới Thiệu](#-giới-thiệu)
+- [Tính Năng](#-tính-năng)
+- [Công Nghệ Sử Dụng](#-công-nghệ-sử-dụng)
+- [Cấu Trúc Dự Án](#-cấu-trúc-dự-án)
+- [Yêu Cầu Hệ Thống](#-yêu-cầu-hệ-thống)
+- [Hướng Dẫn Cài Đặt](#-hướng-dẫn-cài-đặt)
+- [Cấu Hình](#-cấu-hình)
+- [Đóng Góp](#-đóng-góp)
+- [Giấy Phép](#-giấy-phép)
+
+## 🎯 Giới Thiệu
+
+Phần mềm Quản Lý Chung Cư là giải pháp số hóa toàn diện giúp ban quản lý chung cư và cư dân có thể: 
+- Quản lý thông tin căn hộ và cư dân
+- Theo dõi và thanh toán các khoản phí
+- Quản lý dịch vụ tiện ích
+- Gửi thông báo và phản hồi
+- Thống kê báo cáo
+
+## ✨ Tính Năng
+
+### 👥 Quản Lý Cư Dân
+- Đăng ký và quản lý thông tin cư dân
+- Quản lý hộ khẩu, thành viên gia đình
+- Theo dõi lịch sử cư trú
+
+### 🏠 Quản Lý Căn Hộ
+- Quản lý thông tin căn hộ (diện tích, tầng, block)
+- Trạng thái căn hộ (đang ở, trống, cho thuê)
+- Lịch sử giao dịch
+
+### 💰 Quản Lý Phí
+- Phí quản lý hàng tháng
+- Phí dịch vụ (điện, nước, internet...)
+- Phí gửi xe
+- Theo dõi công nợ và thanh toán
+
+### 📢 Thông Báo
+- Gửi thông báo đến cư dân
+- Thông báo sự kiện, bảo trì
+- Phản hồi và khiếu nại
+
+### 📊 Báo Cáo & Thống Kê
+- Thống kê thu chi
+- Báo cáo tình trạng căn hộ
+- Dashboard tổng quan
+
+## 🛠 Công Nghệ Sử Dụng
 
 ### Backend (BE)
-- **Framework:** Spring Boot 3.5.9
-- **Ngôn ngữ:** Java 21
-- **Database:** MySQL 8.0
-- **Security:** Spring Security
-- **ORM:** Spring Data JPA
-- **Validation:** Spring Boot Starter Validation
-- **Utilities:** Lombok
+| Công nghệ | Phiên bản | Mô tả |
+|-----------|-----------|-------|
+| Java | 21 | Ngôn ngữ lập trình |
+| Spring Boot | 3.5.9 | Framework chính |
+| Spring Security | - | Bảo mật và xác thực |
+| Spring Data JPA | - | ORM và truy vấn database |
+| MySQL | - | Cơ sở dữ liệu |
+| Lombok | - | Giảm boilerplate code |
+| Docker | - | Container hóa ứng dụng |
 
 ### Frontend (FE)
-- **Submodule:** Được quản lý riêng biệt
+| Công nghệ | Phiên bản | Mô tả |
+|-----------|-----------|-------|
+| React | 19.2.0 | Thư viện UI |
+| TypeScript | 5.9.3 | Ngôn ngữ lập trình |
+| Vite | 7.2.4 | Build tool |
+| Ant Design | 6.1.1 | UI Component Library |
+| TailwindCSS | 4.1.18 | CSS Framework |
+| React Router | 7.11.0 | Routing |
+| Axios | 1.13.2 | HTTP Client |
+| Chart.js | 4.5.1 | Biểu đồ thống kê |
 
-## 📁 Cấu trúc dự án
+## 📁 Cấu Trúc Dự Án
 
 ```
-├── BE/                     # Backend - Spring Boot Application
-│   ├── src/               # Source code
-│   ├── pom.xml            # Maven dependencies
-│   ├── docker-compose.yml # Docker configuration
-│   ├── init-db/           # Database initialization scripts
-│   └── mvnw               # Maven wrapper
-├── FE/                     # Frontend (Submodule)
-└── package-lock.json
+Quan_Li_Chung_Cu_ProjectKTPM/
+├── BE/                          # Backend (Spring Boot)
+│   ├── src/                     # Source code
+│   ├── init-db/                 # Database initialization scripts
+│   ├── pom.xml                  # Maven dependencies
+│   ├── docker-compose.yml       # Docker configuration
+│   └── mvnw                     # Maven wrapper
+│
+├── FE/                          # Frontend (React + TypeScript)
+│   ├── src/                     # Source code
+│   ├── public/                  # Static assets
+│   ├── package.json             # NPM dependencies
+│   ├── vite.config.ts           # Vite configuration
+│   └── tsconfig.json            # TypeScript configuration
+│
+└── README.md                    # Project documentation
 ```
 
-## 🚀 Hướng dẫn cài đặt và chạy dự án
+## 💻 Yêu Cầu Hệ Thống
 
-### Yêu cầu hệ thống
+### Backend
+- Java JDK 21+
+- Maven 3.8+
+- MySQL 8.0+
+- Docker & Docker Compose (tùy chọn)
 
-- **Java:** JDK 21 hoặc cao hơn
-- **Maven:** 3.6+ (hoặc sử dụng Maven Wrapper)
-- **Docker & Docker Compose:** Phiên bản mới nhất
-- **Git:** Để clone repository
+### Frontend
+- Node.js 18+
+- npm hoặc yarn
 
-### Bước 1: Clone repository
+## 🚀 Hướng Dẫn Cài Đặt
+
+### 1. Clone Repository
 
 ```bash
-git clone https://github.com/truntain/test.git
-cd test
-git checkout dev
+git clone https://github.com/Hoangdk2005/Quan_Li_Chung_Cu_ProjectKTPM.git
+cd Quan_Li_Chung_Cu_ProjectKTPM
 ```
 
-### Bước 2: Khởi động Database với Docker
+### 2. Cài Đặt Backend
+
+#### Sử dụng Docker (Khuyến nghị)
 
 ```bash
 cd BE
 docker-compose up -d
 ```
 
-**Thông tin kết nối database:**
-| Thông số | Giá trị |
-|----------|---------|
-| Host | localhost |
-| Port | 3307 |
-| Database | apartment_mgmt |
-| Username | apartment_user |
-| Password | apartment_pass |
-| Root Password | root123 |
-
-### Bước 3: Chạy Backend
-
-**Sử dụng Maven Wrapper (khuyến nghị):**
+#### Cài đặt thủ công
 
 ```bash
-# Linux/macOS
+cd BE
+
+# Cấu hình database trong application.properties
+
+# Build và chạy
+./mvnw clean install
 ./mvnw spring-boot:run
-
-# Windows
-mvnw.cmd spring-boot:run
 ```
 
-**Hoặc sử dụng Maven đã cài đặt:**
+Backend sẽ chạy tại: `http://localhost:8080`
+
+### 3. Cài Đặt Frontend
 
 ```bash
-mvn spring-boot:run
+cd FE
+
+# Cài đặt dependencies
+npm install
+
+# Chạy development server
+npm run dev
 ```
 
-### Bước 4: Truy cập ứng dụng
+Frontend sẽ chạy tại: `http://localhost:5173`
 
-- **Backend API:** http://localhost:8080
+### 4. Build Production
 
-## 🔧 Cấu hình môi trường
+#### Backend
+```bash
+cd BE
+./mvnw clean package
+java -jar target/quanlichungcu-0.0.1-SNAPSHOT.jar
+```
 
-Tạo file `application.properties` hoặc `application.yml` trong thư mục `BE/src/main/resources/` với các cấu hình sau:
+#### Frontend
+```bash
+cd FE
+npm run build
+npm run preview
+```
+
+## ⚙️ Cấu Hình
+
+### Backend (application.properties)
 
 ```properties
 # Database Configuration
-spring.datasource.url=jdbc:mysql://localhost:3307/apartment_mgmt
-spring.datasource.username=apartment_user
-spring.datasource.password=apartment_pass
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/quanlichungcu
+spring.datasource.username=your_username
+spring.datasource.password=your_password
 
 # JPA Configuration
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# Server Configuration
+server.port=8080
 ```
 
-## 📝 Lưu ý quan trọng
+### Frontend (.env)
 
-1. **Database Port:** Docker expose MySQL trên port `3307` (không phải port mặc định 3306)
-2. **Khởi động Docker trước:** Đảm bảo Docker container đang chạy trước khi khởi động ứng dụng Spring Boot
-3. **Init Scripts:** Các script khởi tạo database được đặt trong thư mục `BE/init-db/`
-
-## 🧪 Chạy Tests
-
-```bash
-cd BE
-
-# Chạy tất cả tests
-./mvnw test
-
-# Chạy tests với coverage
-./mvnw test jacoco:report
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-## 🐳 Các lệnh Docker hữu ích
+## 📝 API Documentation
 
-```bash
-# Khởi động containers
-docker-compose up -d
+API endpoints có thể được truy cập tại: `http://localhost:8080/swagger-ui.html` (nếu đã cấu hình Swagger)
 
-# Dừng containers
-docker-compose down
+## 🤝 Đóng Góp
 
-# Xem logs
-docker-compose logs -f mysql
-
-# Truy cập MySQL CLI
-docker exec -it apartment_mysql mysql -u apartment_user -p
-```
-
-## 👥 Đóng góp
+Mọi đóng góp đều được chào đón! Vui lòng:
 
 1. Fork repository
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
-4. Push lên branch (`git push origin feature/AmazingFeature`)
+2. Tạo branch mới (`git checkout -b feature/TinhNangMoi`)
+3. Commit thay đổi (`git commit -m 'Thêm tính năng mới'`)
+4. Push lên branch (`git push origin feature/TinhNangMoi`)
 5. Tạo Pull Request
 
-## 📄 License
+## 📄 Giấy Phép
 
-Dự án này được phát triển cho mục đích học tập và demo.
+Dự án này được cấp phép theo giấy phép MIT - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 ---
 
-**Developed with ❤️ by Team**
+<p align="center">
+  Made with ❤️ for Apartment Management
+</p>
